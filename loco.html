@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="zh-Hant" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loco.h | 醫美面部美學諮詢師</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;700&family=Orbitron:wght@400;500;700;900&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+    <!-- Tailwind Config for Custom Colors -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        neon: {
+                            purple: '#b026ff',
+                            green: '#00ff41',
+                            blue: '#00f3ff',
+                            dark: '#0a0a0a',
+                            darker: '#050505',
+                            panel: '#0d1117'
+                        }
+                    },
+                    fontFamily: {
+                        'cyber': ['"Orbitron"', 'sans-serif'],
+                        'code': ['"Fira Code"', 'monospace'],
+                        'body': ['"Noto Sans TC"', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        'neon-purple': '0 0 5px #b026ff, 0 0 10px #b026ff',
+                        'neon-green': '0 0 5px #00ff41, 0 0 10px #00ff41',
+                    },
+                    animation: {
+                        'pulse-fast': 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'glitch': 'glitch 1s linear infinite',
+                    },
+                    keyframes: {
+                        glitch: {
+                            '2%, 64%': { transform: 'translate(2px,0) skew(0deg)' },
+                            '4%, 60%': { transform: 'translate(-2px,0) skew(0deg)' },
+                            '62%': { transform: 'translate(0,0) skew(5deg)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Base Styles */
+        body {
+            background-color: #0a0a0a;
+            color: #e0e0e0;
+            overflow-x: hidden;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0a0a0a; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #b026ff; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #d67aff; 
+        }
+
+        /* Matrix Canvas Background */
+        #matrix-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: -1;
+            opacity: 0.15;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Cyberpunk Utilities */
+        .glass-panel {
+            background: rgba(13, 17, 23, 0.85);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(176, 38, 255, 0.3);
+            box-shadow: 0 0 15px rgba(176, 38, 255, 0.1);
+        }
+
+        .neon-text-purple {
+            text-shadow: 0 0 5px #b026ff, 0 0 10px #b026ff;
+        }
+        
+        .neon-text-green {
+            text-shadow: 0 0 5px #00ff41, 0 0 10px #00ff41;
+        }
+
+        .terminal-cursor::after {
+            content: '_';
+            animation: blink 1s step-end infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        /* Python Editor Line Numbers */
+        .line-numbers {
+            counter-reset: line;
+        }
+        .line-numbers > div::before {
+            counter-increment: line;
+            content: counter(line);
+            display: inline-block;
+            width: 2em;
+            margin-right: 1em;
+            color: #4a5568;
+            text-align: right;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.8em;
+        }
+
+        /* Custom Selection Color */
+        ::selection {
+            background: #b026ff;
+            color: #fff;
+        }
+    </style>
+</head>
+<body class="font-body selection:bg-neon-purple selection:text-white">
+
+    <!-- Matrix Background -->
+    <canvas id="matrix-canvas"></canvas>
+
+    <!-- Navigation -->
+    <nav class="fixed w-full z-50 top-0 start-0 border-b border-neon-purple/30 bg-neon-dark/90 backdrop-blur-md">
+        <div class="max-w-screen-xl flex flex-wrap items-center justify-between mx-auto p-4">
+            <a href="#" class="flex items-center space-x-3 rtl:space-x-reverse group">
+                <span class="self-center text-2xl font-cyber font-semibold whitespace-nowrap text-white group-hover:text-neon-purple transition-colors duration-300">
+                    <i class="fas fa-dna mr-2 text-neon-green"></i>LOCO.H
+                </span>
+            </a>
+            <div class="flex md:order-2 space-x-3 md:space-x-0 rtl:space-x-reverse">
+                <a href="https://www.facebook.com/share/1DJ65QrpBN/?mibextid=wwXIfr" target="_blank"
+                   class="relative inline-flex items-center justify-center p-0.5 mb-2 me-2 overflow-hidden text-sm font-medium rounded-lg group bg-gradient-to-br from-purple-600 to-blue-500 group-hover:from-purple-600 group-hover:to-blue-500 hover:text-white text-white focus:ring-4 focus:outline-none focus:ring-blue-800">
+                    <span class="relative px-5 py-2.5 transition-all ease-in duration-75 bg-gray-900 rounded-md group-hover:bg-opacity-0 font-code">
+                        > Book_Session
+                    </span>
+                </a>
+                <button data-collapse-toggle="navbar-sticky" type="button" class="inline-flex items-center p-2 w-10 h-10 justify-center text-sm text-gray-400 rounded-lg md:hidden hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-600">
+                    <span class="sr-only">Open main menu</span>
+                    <svg class="w-5 h-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 17 14">
+                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M1 1h15M1 7h15M1 13h15"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="items-center justify-between hidden w-full md:flex md:w-auto md:order-1" id="navbar-sticky">
+                <ul class="flex flex-col p-4 md:p-0 mt-4 font-medium border border-gray-700 rounded-lg bg-gray-800/50 md:space-x-8 rtl:space-x-reverse md:flex-row md:mt-0 md:border-0 md:bg-transparent font-cyber">
+                    <li><a href="#home" class="block py-2 px-3 text-white bg-neon-purple rounded md:bg-transparent md:text-neon-purple md:p-0">HOME</a></li>
+                    <li><a href="#about" class="block py-2 px-3 text-gray-300 rounded hover:bg-gray-700 md:hover:bg-transparent md:hover:text-neon-purple md:p-0">ABOUT</a></li>
+                    <li><a href="#solutions" class="block py-2 px-3 text-gray-300 rounded hover:bg-gray-700 md:hover:bg-transparent md:hover:text-neon-purple md:p-0">SOLUTIONS</a></li>
+                    <li><a href="#resources" class="block py-2 px-3 text-gray-300 rounded hover:bg-gray-700 md:hover:bg-transparent md:hover:text-neon-purple md:p-0">RESOURCES</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="home" class="h-screen flex items-center justify-center relative pt-20">
+        <div class="text-center px-4 max-w-4xl z-10">
+            <h2 class="text-neon-purple font-code text-lg mb-4 terminal-cursor inline-block" id="hero-subtitle">Initializing Beauty Protocols...</h2>
+            <h1 class="text-4xl md:text-7xl font-cyber font-bold text-white mb-6 leading-tight neon-text-purple">
+                Empowering Beauty <br>
+                <span class="text-transparent bg-clip-text bg-gradient-to-r from-neon-purple to-neon-blue">with Intelligence</span>
+            </h1>
+            <p class="text-gray-400 text-lg md:text-xl mb-8 max-w-2xl mx-auto">
+                運用精準美學數據，重塑您的面部演算法。<br>Bridging the gap between Medical Precision and Art.
+            </p>
+            
+            <!-- Hero Button (Terminal Style) -->
+            <a href="https://www.facebook.com/share/1DJ65QrpBN/?mibextid=wwXIfr" target="_blank" class="group relative inline-block">
+                <div class="absolute -inset-1 bg-gradient-to-r from-neon-purple to-neon-blue rounded-lg blur opacity-25 group-hover:opacity-100 transition duration-1000 group-hover:duration-200"></div>
+                <button class="relative bg-black border border-neon-purple text-neon-purple font-code py-4 px-8 rounded-lg transition-all duration-300 group-hover:bg-neon-green group-hover:text-black group-hover:border-neon-green group-hover:shadow-neon-green w-80 h-16 flex items-center justify-center overflow-hidden">
+                   <span class="group-hover:hidden">> Execute_Consultation_Protocol.exe</span>
+                   <span class="hidden group-hover:block font-bold">Status: Ready to Connect</span>
+                </button>
+            </a>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about" class="py-20 bg-neon-darker border-t border-gray-900">
+        <div class="container mx-auto px-4">
+            <div class="flex flex-col md:flex-row items-center gap-12">
+                <!-- Avatar/Visual -->
+                <div class="w-full md:w-1/3 flex justify-center">
+                    <div class="relative w-64 h-64">
+                        <div class="absolute inset-0 bg-neon-purple rounded-full blur-xl opacity-20 animate-pulse"></div>
+                        <div class="relative w-full h-full rounded-full border-2 border-neon-purple bg-gray-900 flex items-center justify-center overflow-hidden">
+                            <!-- User Icon -->
+                            <i class="fas fa-user-md text-8xl text-gray-600"></i>
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
+                            <div class="absolute bottom-4 text-center w-full font-cyber text-neon-purple">LOCO.H</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Text Content -->
+                <div class="w-full md:w-2/3">
+                    <h2 class="text-3xl font-cyber text-white mb-6 border-l-4 border-neon-purple pl-4">關於我 <span class="text-sm text-gray-500 font-code ml-2">// System Architect</span></h2>
+                    
+                    <div class="glass-panel p-6 rounded-lg mb-6">
+                        <p class="text-gray-300 leading-relaxed mb-4">
+                            我是 Loco.h，一位專注於面部美學架構的諮詢專家。擁有 <span class="text-neon-green font-bold">6 年</span> 的一線實戰經驗，服務過上千位追求極致的顧客。我看待面孔不僅是生物組織，更是精密的幾何結構。
+                        </p>
+                        <p class="text-gray-300 leading-relaxed">
+                            在我的諮詢哲學中，美學不應只是複製，而是針對個人特質的「系統優化」。我擅長將複雜的醫美術式轉化為清晰的視覺方案，如同工程師優化代碼般，為您剔除多餘的視覺雜訊，精準校正五官比例，打造既符合黃金比例又保留個人辨識度的專屬美學。
+                        </p>
+                    </div>
+
+                    <!-- Tags -->
+                    <div class="flex flex-wrap gap-3 font-code text-sm">
+                        <span class="px-3 py-1 border border-gray-700 rounded text-neon-purple bg-gray-900/50"># Face_Architect</span>
+                        <span class="px-3 py-1 border border-gray-700 rounded text-neon-purple bg-gray-900/50"># 6_Years_Exp</span>
+                        <span class="px-3 py-1 border border-gray-700 rounded text-neon-purple bg-gray-900/50"># Aesthetic_Consultant</span>
+                        <span class="px-3 py-1 border border-gray-700 rounded text-neon-purple bg-gray-900/50"># 1000+_Cases</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Services Section (Aesthetic Knowledge) -->
+    <section id="solutions" class="py-20 relative">
+        <div class="container mx-auto px-4">
+            <h2 class="text-3xl font-cyber text-center text-white mb-12">美學解決方案 <span class="text-neon-purple">/// SOLUTIONS</span></h2>
+            
+            <p class="text-center text-gray-400 max-w-2xl mx-auto mb-12">
+                運用高科技思維解構醫美項目。我們不只是做手術，我們在進行面部系統的「版本更新」與「效能優化」。
+            </p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Eye Surgery -->
+                <div class="glass-panel p-8 rounded-xl hover:border-neon-green transition-all duration-300 group">
+                    <div class="text-4xl text-neon-purple mb-6 group-hover:text-neon-green transition-colors">
+                        <i class="fas fa-eye"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-4 font-cyber">眼部視覺優化</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed mb-4">
+                        <span class="text-neon-blue">[Visual_Interface_Upgrade]</span><br>
+                        針對靈魂之窗進行結構調整。包含雙眼皮成形（切割/縫合）、開眼頭/眼尾（視野擴展）、提眼瞼肌矯正（信號增強）及眼袋脂肪轉位（緩存清理）。
+                    </p>
+                </div>
+
+                <!-- Nose Surgery -->
+                <div class="glass-panel p-8 rounded-xl hover:border-neon-green transition-all duration-300 group">
+                    <div class="text-4xl text-neon-purple mb-6 group-hover:text-neon-green transition-colors">
+                        <i class="fas fa-signal"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-4 font-cyber">鼻部中軸校準</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed mb-4">
+                        <span class="text-neon-blue">[Axis_Calibration]</span><br>
+                        面部立體感的核心運算。提供一段式至三段式隆鼻、鼻翼縮小（寬度優化）、鼻頭精緻化與鼻骨截骨手術，打造完美的 T 字部位數據。
+                    </p>
+                </div>
+
+                <!-- Contouring -->
+                <div class="glass-panel p-8 rounded-xl hover:border-neon-green transition-all duration-300 group">
+                    <div class="text-4xl text-neon-purple mb-6 group-hover:text-neon-green transition-colors">
+                        <i class="fas fa-draw-polygon"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-4 font-cyber">輪廓結構重塑</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed mb-4">
+                        <span class="text-neon-blue">[Structural_Refactoring]</span><br>
+                        針對面部框架的底層代碼重寫。包含削骨手術（下顎角/顴骨）、墊下巴（終端延伸）與自體脂肪填充（軟體緩衝層建立）。
+                    </p>
+                </div>
+
+                <!-- Anti-Aging -->
+                <div class="glass-panel p-8 rounded-xl hover:border-neon-green transition-all duration-300 group">
+                    <div class="text-4xl text-neon-purple mb-6 group-hover:text-neon-green transition-colors">
+                        <i class="fas fa-history"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-4 font-cyber">逆齡韌帶拉提</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed mb-4">
+                        <span class="text-neon-blue">[System_Restore]</span><br>
+                        對抗地心引力的物理引擎優化。提供埋線拉提、SMAS 筋膜層拉皮手術，以及電波/音波非侵入式緊緻，恢復年輕時的肌膚張力參數。
+                    </p>
+                </div>
+
+                <!-- Injections -->
+                <div class="glass-panel p-8 rounded-xl hover:border-neon-green transition-all duration-300 group">
+                    <div class="text-4xl text-neon-purple mb-6 group-hover:text-neon-green transition-colors">
+                        <i class="fas fa-syringe"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-4 font-cyber">微整參數微調</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed mb-4">
+                        <span class="text-neon-blue">[Parameter_Tuning]</span><br>
+                        肉毒桿菌（動態紋路抑制）、玻尿酸填充（容積補充）、膠原蛋白增生劑。以最小的介入達到最大的視覺效能提升。
+                    </p>
+                </div>
+
+                <!-- Consultation -->
+                <div class="glass-panel p-8 rounded-xl hover:border-neon-green transition-all duration-300 group">
+                    <div class="text-4xl text-neon-purple mb-6 group-hover:text-neon-green transition-colors">
+                        <i class="fas fa-comments"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-4 font-cyber">專屬工作流諮詢</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed mb-4">
+                        <span class="text-neon-blue">[Custom_Workflow]</span><br>
+                        不確定自己適合什麼？提供一對一深度面診，分析您的面部特徵與預算，規劃長期的變美路徑圖 (Roadmap)。
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Resources Section -->
+    <section id="resources" class="py-20 bg-neon-darker border-t border-gray-800">
+        <div class="container mx-auto px-4">
+            <h2 class="text-3xl font-cyber text-center text-white mb-12">技術資源與案例 <span class="text-neon-purple">// DATABASE</span></h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- Resource 1 -->
+                <a href="https://www.facebook.com/share/1DJ65QrpBN/?mibextid=wwXIfr" target="_blank" class="block group">
+                    <div class="bg-gray-900 border border-gray-700 rounded-lg p-6 h-full hover:border-neon-purple hover:shadow-neon-purple transition-all duration-300 relative overflow-hidden">
+                        <div class="absolute top-0 right-0 p-4 text-gray-600 group-hover:text-white transition-colors">
+                            <i class="fas fa-file-medical-alt text-3xl"></i>
+                        </div>
+                        <h4 class="text-lg font-bold text-white mb-2 group-hover:text-neon-purple">諮詢案例資料庫</h4>
+                        <p class="text-xs text-neon-blue mb-4 font-code">CASE_LOGS_V2.0</p>
+                        <p class="text-gray-400 text-sm">
+                            <i class="fab fa-facebook mr-2"></i>連結至 Facebook<br>
+                            收錄真實諮詢紀錄與術前術後對比分析，見證數據化美學的實際成效。
+                        </p>
+                    </div>
+                </a>
+
+                <!-- Resource 2 -->
+                <a href="https://docs.google.com/document/d/1TLEWfcer9M8-tsa_txdphiVacwga5HnW7uN24JGI-Ws/edit?tab=t.0" target="_blank" class="block group">
+                    <div class="bg-gray-900 border border-gray-700 rounded-lg p-6 h-full hover:border-neon-purple hover:shadow-neon-purple transition-all duration-300 relative overflow-hidden">
+                        <div class="absolute top-0 right-0 p-4 text-gray-600 group-hover:text-white transition-colors">
+                            <i class="fas fa-book-medical text-3xl"></i>
+                        </div>
+                        <h4 class="text-lg font-bold text-white mb-2 group-hover:text-neon-purple">術後護理與知識庫</h4>
+                        <p class="text-xs text-neon-blue mb-4 font-code">RECOVERY_PROTOCOL_DOC</p>
+                        <p class="text-gray-400 text-sm">
+                            <i class="fab fa-google-drive mr-2"></i>Google Docs 專屬文件<br>
+                            詳細的術前準備清單與術後黃金修復期指南，確保您的「系統重啟」順利無誤。
+                        </p>
+                    </div>
+                </a>
+
+                <!-- Resource 3 -->
+                <a href="https://www.facebook.com/share/1DJ65QrpBN/?mibextid=wwXIfr" target="_blank" class="block group">
+                    <div class="bg-gray-900 border border-gray-700 rounded-lg p-6 h-full hover:border-neon-purple hover:shadow-neon-purple transition-all duration-300 relative overflow-hidden">
+                        <div class="absolute top-0 right-0 p-4 text-gray-600 group-hover:text-white transition-colors">
+                            <i class="fas fa-magic text-3xl"></i>
+                        </div>
+                        <h4 class="text-lg font-bold text-white mb-2 group-hover:text-neon-purple">美學風格模擬</h4>
+                        <p class="text-xs text-neon-blue mb-4 font-code">STYLE_GENERATION</p>
+                        <p class="text-gray-400 text-sm">
+                            <i class="fab fa-facebook mr-2"></i>連結至 Facebook<br>
+                            探索不同風格的面部美學模板（自然風、混血風、網紅風），協助您定義專屬的 Prompt。
+                        </p>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section (Python Editor Style) -->
+    <footer id="contact" class="bg-neon-panel border-t-2 border-neon-purple py-12 font-code relative">
+        <!-- Decoration -->
+        <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-neon-purple via-neon-blue to-neon-purple"></div>
+        
+        <div class="container mx-auto px-4 max-w-4xl">
+            <div class="bg-[#0d1117] rounded-lg shadow-2xl overflow-hidden border border-gray-700">
+                <!-- Editor Header -->
+                <div class="bg-[#161b22] px-4 py-2 flex items-center border-b border-gray-700">
+                    <div class="flex space-x-2 mr-4">
+                        <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                        <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+                        <div class="w-3 h-3 rounded-full bg-green-500"></div>
+                    </div>
+                    <span class="text-gray-400 text-xs">contact_loco.py</span>
+                </div>
+
+                <!-- Editor Body -->
+                <div class="p-6 flex overflow-x-auto">
+                    <!-- Line Numbers -->
+                    <div class="line-numbers text-gray-500 mr-4 select-none">
+                        <div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div>
+                    </div>
+
+                    <!-- Code Content -->
+                    <div class="w-full">
+                        <div class="text-gray-300 mb-2">
+                            <span class="text-purple-400">class</span> <span class="text-yellow-300">AestheticProtocol</span>:
+                        </div>
+                        <div class="pl-8 mb-2">
+                            <span class="text-purple-400">def</span> <span class="text-blue-400">__init__</span>(self):
+                        </div>
+                        <div class="pl-16 mb-2">
+                            <span class="text-red-400">self</span>.consultant = <span class="text-green-300">"Loco.h"</span>
+                        </div>
+                        <div class="pl-16 mb-4">
+                            <span class="text-red-400">self</span>.link = <span class="text-green-300">"facebook.com/share/..."</span>
+                        </div>
+
+                        <div class="pl-8 mb-2">
+                            <span class="text-purple-400">def</span> <span class="text-blue-400">execute_connection</span>(self):
+                        </div>
+                        
+                        <!-- Interactive Button in Code -->
+                        <div class="pl-16 mb-6 mt-2">
+                            <a href="https://www.facebook.com/share/1DJ65QrpBN/?mibextid=wwXIfr" target="_blank" id="hacker-btn-link">
+                                <button id="hacker-btn" class="bg-gray-800 border border-gray-600 hover:bg-neon-green hover:text-black hover:border-transparent hover:shadow-neon-green text-neon-green px-4 py-2 rounded font-code transition-all duration-200 w-full md:w-auto text-left flex items-center gap-2 group">
+                                    <span class="mr-2">></span>
+                                    <span id="hacker-text">Execute_Connection_Protocol.exe</span>
+                                </button>
+                            </a>
+                        </div>
+
+                        <div class="text-gray-500 italic mb-2"># External Dependencies</div>
+                        <div class="mb-1">
+                            <span class="text-purple-400">import</span> <a href="https://www.facebook.com/share/1DJ65QrpBN/?mibextid=wwXIfr" class="text-white hover:text-neon-purple hover:underline decoration-neon-purple underline-offset-4">Facebook</a> <span class="text-gray-500">as</span> <span class="text-yellow-300">Community</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="text-center mt-8 text-gray-600 text-sm">
+                &copy; 2025 Loco.h Aesthetics. All Rights Reserved.
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script>
+        // --- 1. Matrix Rain Effect ---
+        const canvas = document.getElementById('matrix-canvas');
+        const ctx = canvas.getContext('2d');
+
+        let width = canvas.width = window.innerWidth;
+        let height = canvas.height = window.innerHeight;
+
+        const cols = Math.floor(width / 20) + 1;
+        const ypos = Array(cols).fill(0);
+        const characters = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZアイウエオカキクケコサシスセソ';
+
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, width, height);
+
+        function matrix() {
+            ctx.fillStyle = '#0001'; // Fade effect
+            ctx.fillRect(0, 0, width, height);
+
+            ctx.fillStyle = '#0f0'; // Green text
+            ctx.font = '15pt monospace';
+
+            ypos.forEach((y, index) => {
+                const text = characters.charAt(Math.floor(Math.random() * characters.length));
+                const x = index * 20;
+                
+                // Randomly color some characters purple for the theme
+                if (Math.random() > 0.95) ctx.fillStyle = '#b026ff';
+                else ctx.fillStyle = '#003300'; // Dark green most of time
+
+                ctx.fillText(text, x, y);
+                
+                // Reset color
+                ctx.fillStyle = '#003300';
+
+                if (y > 100 + Math.random() * 10000) ypos[index] = 0;
+                else ypos[index] = y + 20;
+            });
+        }
+        setInterval(matrix, 50);
+
+        // Handle resize
+        window.addEventListener('resize', () => {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        });
+
+        // --- 2. Typewriter Effect (Hero Section) ---
+        const subtitleElement = document.getElementById('hero-subtitle');
+        const phrases = ["Initializing Beauty Protocols...", "Scanning Facial Geometry...", "Optimizing Aesthetic Parameters...", "System Ready."];
+        let phraseIndex = 0;
+        let charIndex = 0;
+        let isDeleting = false;
+
+        function typeWriter() {
+            const currentPhrase = phrases[phraseIndex];
+            
+            if (isDeleting) {
+                subtitleElement.innerText = currentPhrase.substring(0, charIndex - 1);
+                charIndex--;
+            } else {
+                subtitleElement.innerText = currentPhrase.substring(0, charIndex + 1);
+                charIndex++;
+            }
+
+            let typeSpeed = isDeleting ? 50 : 100;
+
+            if (!isDeleting && charIndex === currentPhrase.length) {
+                typeSpeed = 2000; // Pause at end
+                isDeleting = true;
+            } else if (isDeleting && charIndex === 0) {
+                isDeleting = false;
+                phraseIndex = (phraseIndex + 1) % phrases.length;
+                typeSpeed = 500;
+            }
+
+            setTimeout(typeWriter, typeSpeed);
+        }
+        
+        // Start typewriter after a slight delay
+        setTimeout(typeWriter, 1000);
+
+
+        // --- 3. Hacker Button Unlock Effect (Footer) ---
+        const hackerBtn = document.getElementById('hacker-btn');
+        const hackerText = document.getElementById('hacker-text');
+        const originalText = "Execute_Connection_Protocol.exe";
+        const finalText = "點擊預約 (Click to Schedule)";
+        const randomChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789#@$%&";
+        let intervalId = null;
+
+        hackerBtn.addEventListener('mouseenter', () => {
+            let iteration = 0;
+            clearInterval(intervalId);
+            
+            hackerBtn.classList.add('bg-neon-green', 'text-black');
+            
+            intervalId = setInterval(() => {
+                hackerText.innerText = finalText
+                    .split("")
+                    .map((letter, index) => {
+                        if (index < iteration) {
+                            return finalText[index];
+                        }
+                        return randomChars[Math.floor(Math.random() * 26)];
+                    })
+                    .join("");
+                
+                if (iteration >= finalText.length) {
+                    clearInterval(intervalId);
+                }
+                
+                iteration += 1 / 3;
+            }, 30);
+        });
+
+        hackerBtn.addEventListener('mouseleave', () => {
+            clearInterval(intervalId);
+            hackerText.innerText = originalText;
+            hackerBtn.classList.remove('bg-neon-green', 'text-black');
+        });
+
+    </script>
+</body>
+</html>
